@@ -1,0 +1,2 @@
+#pragma once
+#define SPLASHSCREEN_MODULE_VERSION_EXTRA ""

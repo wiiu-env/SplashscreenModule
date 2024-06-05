@@ -1,0 +1,8 @@
+*.elf
+*.rpx
+build/
+.idea/
+.vscode/
+cmake-build-debug/
+CMakeLists.txt
+*.zip
