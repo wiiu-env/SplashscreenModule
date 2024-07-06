@@ -17,16 +17,12 @@ int32_t main(int32_t argc, char **argv) {
         basePath = argv[0];
     }
 
-    if (existsAsFile(basePath + "/splash.png") || existsAsFile(basePath + "/splash.tga")) {
-        GfxInit();
-        {
-            SplashScreenDrawer splashScreenDrawer(basePath + "/");
-            splashScreenDrawer.Draw();
-        }
-        GfxShutdown();
-    } else {
-        DEBUG_FUNCTION_LINE_INFO("No splash.png or splash.tga found in \"%s\". Skipping splash screen.", basePath.c_str());
+    GfxInit();
+    {
+        SplashScreenDrawer splashScreenDrawer(basePath + "/");
+        splashScreenDrawer.Draw();
     }
+    GfxShutdown();
 
     deinitLogging();
 
