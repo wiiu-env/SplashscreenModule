@@ -1,8 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <string_view>
-#include <sys/stat.h>
+#include <filesystem>
 #include <vector>
 
-bool LoadFileIntoBuffer(std::string_view path, std::vector<uint8_t> &buffer);
+bool LoadFileIntoBuffer(const std::filesystem::path &filename, std::vector<uint8_t> &buffer);

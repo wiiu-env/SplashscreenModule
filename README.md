@@ -4,14 +4,18 @@ This module is supposed to be loaded with the [EnvironmentLoader](https://github
 other modules of the environment are loading.
 
 ## Usage
-Place the `01_splashscreen.rpx` in the `[ENVIRONMENT]/modules/setup` folder and run the EnvironmentLoader. 
-- Requires a `splash.png` (recommended) or `splash.tga` in the `[ENVIRONMENT]` directory.
-  - When using a `tga` make sure its 24 bit and uncompressed
-  - In theory any (reasonable) resolution is supported, something like 1280x720 is recommended
+Place the `01_splashscreen.rpx` in the `[ENVIRONMENT]/modules/setup` folder and run the
+EnvironmentLoader. The module will attempt to load the splash image, in this order:
+  1. `[ENVIRONMENT]/splash.png`
+  2. `[ENVIRONMENT]/splash.tga`
+  3. A random image from the directory `[ENVIRONMENT]/splashes/`.
 
 If no splash screen is found on the sd card, this module will effectively do nothing.
 
-**Note:** `[ENVIRONMENT]` is the directory of the environment, for Aroma with would be `sd:/wiiu/enviroments/aroma/splash.png`
+**Notes:**
+  - `[ENVIRONMENT]` is the directory of the environment, for Aroma with would be `sd:/wiiu/enviroments/aroma/splash.png`
+  - When using a `tga` make sure its 24 bit and uncompressed
+  - In theory any (reasonable) resolution is supported, something like 1280x720 is recommended
 
 ## Buildflags
 

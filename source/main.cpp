@@ -12,14 +12,14 @@ int32_t main(int32_t argc, char **argv) {
     initLogging();
     DEBUG_FUNCTION_LINE_INFO("Running SplashScreen Module " MODULE_VERSION_FULL "");
 
-    std::string basePath = "fs:/vol/external01/wiiu";
+    std::filesystem::path basePath = "fs:/vol/external01/wiiu";
     if (argc >= 1) {
         basePath = argv[0];
     }
 
     GfxInit();
     {
-        SplashScreenDrawer splashScreenDrawer(basePath + "/");
+        SplashScreenDrawer splashScreenDrawer(basePath);
         splashScreenDrawer.Draw();
     }
     GfxShutdown();

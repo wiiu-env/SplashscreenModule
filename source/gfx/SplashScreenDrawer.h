@@ -2,6 +2,7 @@
 
 #include "ShaderSerializer.h"
 #include "gfx.h"
+#include <filesystem>
 #include <gx2/sampler.h>
 #include <gx2/shaders.h>
 #include <gx2/texture.h>
@@ -10,7 +11,7 @@
 
 class SplashScreenDrawer {
 public:
-    explicit SplashScreenDrawer(std::string_view meta_dir);
+    explicit SplashScreenDrawer(const std::filesystem::path &meta_dir);
 
     void Draw();
 
