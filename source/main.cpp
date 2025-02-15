@@ -3,9 +3,8 @@
 #include "utils/logger.h"
 #include "utils/utils.h"
 #include "version.h"
-#include <coreinit/memory.h>
 
-#define MODULE_VERSION      "v0.1"
+#define MODULE_VERSION      "v0.2"
 #define MODULE_VERSION_FULL MODULE_VERSION SPLASHSCREEN_MODULE_VERSION_EXTRA
 
 int32_t main(int32_t argc, char **argv) {
