@@ -3,12 +3,22 @@
 #include <gx2/mem.h>
 #include <malloc.h>
 #include <png.h>
+#include <utils/logger.h>
 
 static void png_read_data(png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead) {
     void **data = (void **) png_get_io_ptr(png_ptr);
 
     memcpy(outBytes, *data, byteCountToRead);
     *((uint8_t **) data) += byteCountToRead;
+}
+
+void my_png_error_fn(png_structp png_ptr, png_const_charp error_msg) {
+    DEBUG_FUNCTION_LINE_ERR("libpng error: %s\n", error_msg);
+    longjmp(png_jmpbuf(png_ptr), 1);
+}
+
+void my_png_warning_fn(png_structp png_ptr, png_const_charp warning_msg) {
+    DEBUG_FUNCTION_LINE_ERR("libpng warning: %s\n", warning_msg);
 }
 
 GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
@@ -20,6 +30,14 @@ GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
     png_infop info_ptr = png_create_info_struct(png_ptr);
     if (info_ptr == nullptr) {
         png_destroy_read_struct(&png_ptr, nullptr, nullptr);
+        return nullptr;
+    }
+
+    png_set_error_fn(png_ptr, nullptr, my_png_error_fn, my_png_warning_fn);
+    // Error handling using setjmp/longjmp
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        DEBUG_FUNCTION_LINE_ERR("An error occurred while processing the PNG file\n");
+        png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
         return nullptr;
     }
 
