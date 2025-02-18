@@ -209,8 +209,7 @@ SplashScreenDrawer::SplashScreenDrawer(const std::filesystem::path &splash_base_
     memcpy(coordsUploadBuffer, mTexCoords, mTexCoordBuffer.elemSize * mTexCoordBuffer.elemCount);
     GX2RUnlockBufferEx(&mTexCoordBuffer, GX2R_RESOURCE_BIND_NONE);
 
-    GX2Sampler sampler;
-    GX2InitSampler(&sampler, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
+    GX2InitSampler(&mSampler, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
 }
 
 void SplashScreenDrawer::Draw() {
