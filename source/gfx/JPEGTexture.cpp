@@ -1,7 +1,7 @@
 #include "JPEGTexture.h"
-#include <gx2/mem.h>
 #include <cstdlib>
 #include <cstring>
+#include <gx2/mem.h>
 #include <turbojpeg.h>
 
 GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
