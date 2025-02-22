@@ -1,4 +1,5 @@
 #include "JPEGTexture.h"
+#include "utils/logger.h"
 #include <cstdlib>
 #include <cstring>
 #include <gx2/mem.h>
@@ -20,11 +21,13 @@ GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
                             data.data(), data.size(),
                             &width, &height,
                             &subsamp, &colorspace)) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to parse JPEG header\n");
         goto error;
     }
 
     texture = static_cast<GX2Texture *>(std::malloc(sizeof(GX2Texture)));
     if (!texture) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to allocate texture\n");
         goto error;
     }
 
@@ -48,12 +51,14 @@ GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
     GX2InitTextureRegs(texture);
 
     if (texture->surface.imageSize == 0) {
+        DEBUG_FUNCTION_LINE_ERR("Texture is empty\n");
         goto error;
     }
 
     texture->surface.image = std::aligned_alloc(texture->surface.alignment,
                                                 texture->surface.imageSize);
     if (!texture->surface.image) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to allocate surface for texture\n");
         goto error;
     }
 
@@ -65,6 +70,7 @@ GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
                       height,
                       TJPF_RGBA,
                       0)) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to read JPEG image\n");
         goto error;
     }
 
@@ -72,6 +78,7 @@ GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
 
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_TEXTURE,
                   texture->surface.image, texture->surface.imageSize);
+
     return texture;
 
 error:
