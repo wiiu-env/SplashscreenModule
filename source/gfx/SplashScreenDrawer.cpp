@@ -1,4 +1,5 @@
 #include "SplashScreenDrawer.h"
+#include "JPEGTexture.h"
 #include "PNGTexture.h"
 #include "ShaderSerializer.h"
 #include "TGATexture.h"
@@ -7,6 +8,7 @@
 #include "utils/utils.h"
 #include <cctype>
 #include <coreinit/time.h>
+#include <cstdlib>
 #include <gx2/draw.h>
 #include <gx2/mem.h>
 #include <gx2r/draw.h>
@@ -131,6 +133,8 @@ static GX2Texture *LoadImageAsTexture(const std::filesystem::path &filename) {
         auto ext = ToLower(filename.extension());
         if (ext == ".png") {
             return PNG_LoadTexture(buffer);
+        } else if (ext == ".jpg" || ext == ".jpeg") {
+            return JPEG_LoadTexture(buffer);
         } else if (ext == ".tga") {
             return TGA_LoadTexture(buffer);
         }
@@ -140,6 +144,12 @@ static GX2Texture *LoadImageAsTexture(const std::filesystem::path &filename) {
 
 SplashScreenDrawer::SplashScreenDrawer(const std::filesystem::path &splash_base_path) {
     mTexture = LoadImageAsTexture(splash_base_path / "splash.png");
+    if (!mTexture) {
+        mTexture = LoadImageAsTexture(splash_base_path / "splash.jpg");
+    }
+    if (!mTexture) {
+        mTexture = LoadImageAsTexture(splash_base_path / "splash.jpeg");
+    }
     if (!mTexture) {
         mTexture = LoadImageAsTexture(splash_base_path / "splash.tga");
     }
@@ -152,7 +162,7 @@ SplashScreenDrawer::SplashScreenDrawer(const std::filesystem::path &splash_base_
                     continue;
                 }
                 auto ext = ToLower(entry.path().extension());
-                if (ext == ".png" || ext == ".tga") {
+                if (ext == ".png" || ext == ".tga" || ext == ".jpg" || ext == ".jpeg") {
                     candidates.push_back(entry.path());
                 }
             }
@@ -241,10 +251,10 @@ SplashScreenDrawer::~SplashScreenDrawer() {
     GX2RDestroyBufferEx(&mTexCoordBuffer, GX2R_RESOURCE_BIND_NONE);
     if (mTexture) {
         if (mTexture->surface.image != nullptr) {
-            free(mTexture->surface.image);
+            std::free(mTexture->surface.image);
             mTexture->surface.image = nullptr;
         }
-        ::free(mTexture);
+        std::free(mTexture);
         mTexture = nullptr;
     }
 }
