@@ -1,67 +1,33 @@
 #include "PNGTexture.h"
+#include "utils/logger.h"
+#include <cstdlib>
 #include <cstring>
 #include <gx2/mem.h>
-#include <malloc.h>
 #include <png.h>
-#include <utils/logger.h>
-
-static void png_read_data(png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead) {
-    void **data = (void **) png_get_io_ptr(png_ptr);
-
-    memcpy(outBytes, *data, byteCountToRead);
-    *((uint8_t **) data) += byteCountToRead;
-}
-
-void my_png_error_fn(png_structp png_ptr, png_const_charp error_msg) {
-    DEBUG_FUNCTION_LINE_ERR("libpng error: %s\n", error_msg);
-    longjmp(png_jmpbuf(png_ptr), 1);
-}
-
-void my_png_warning_fn(png_structp png_ptr, png_const_charp warning_msg) {
-    DEBUG_FUNCTION_LINE_ERR("libpng warning: %s\n", warning_msg);
-}
 
 GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
-    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    if (png_ptr == nullptr) {
-        return nullptr;
+    GX2Texture *texture = nullptr;
+
+    png_image image{};
+    image.version = PNG_IMAGE_VERSION;
+
+    if (!png_image_begin_read_from_memory(&image, data.data(), data.size())) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to parse PNG header: %s\n", image.message);
+        goto error;
     }
 
-    png_infop info_ptr = png_create_info_struct(png_ptr);
-    if (info_ptr == nullptr) {
-        png_destroy_read_struct(&png_ptr, nullptr, nullptr);
-        return nullptr;
+    // Request the output to always be RGBA
+    image.format = PNG_FORMAT_RGBA;
+
+    texture = static_cast<GX2Texture *>(std::malloc(sizeof(GX2Texture)));
+    if (!texture) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to allocate texture\n");
+        goto error;
     }
 
-    png_set_error_fn(png_ptr, nullptr, my_png_error_fn, my_png_warning_fn);
-    // Error handling using setjmp/longjmp
-    if (setjmp(png_jmpbuf(png_ptr))) {
-        DEBUG_FUNCTION_LINE_ERR("An error occurred while processing the PNG file\n");
-        png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
-        return nullptr;
-    }
-
-    png_set_read_fn(png_ptr, (void *) &data, png_read_data);
-
-    png_read_info(png_ptr, info_ptr);
-
-    uint32_t width  = 0;
-    uint32_t height = 0;
-    int bitDepth    = 0;
-    int colorType   = -1;
-    uint32_t retval = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitDepth, &colorType, nullptr, nullptr, nullptr);
-    if (retval != 1) {
-        return nullptr;
-    }
-
-    uint32_t bytesPerRow = png_get_rowbytes(png_ptr, info_ptr);
-    auto *rowData        = new uint8_t[bytesPerRow];
-
-    auto *texture = (GX2Texture *) malloc(sizeof(GX2Texture));
-    *texture      = {};
-
-    texture->surface.width     = width;
-    texture->surface.height    = height;
+    std::memset(texture, 0, sizeof(GX2Texture));
+    texture->surface.width     = image.width;
+    texture->surface.height    = image.height;
     texture->surface.depth     = 1;
     texture->surface.mipLevels = 1;
     texture->surface.format    = GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
@@ -79,34 +45,35 @@ GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
     GX2InitTextureRegs(texture);
 
     if (texture->surface.imageSize == 0) {
-        return nullptr;
+        DEBUG_FUNCTION_LINE_ERR("Texture is empty\n");
+        goto error;
     }
 
-    texture->surface.image = memalign(texture->surface.alignment, texture->surface.imageSize);
+    texture->surface.image = std::aligned_alloc(texture->surface.alignment,
+                                                texture->surface.imageSize);
     if (!texture->surface.image) {
-        return nullptr;
+        DEBUG_FUNCTION_LINE_ERR("Failed to allocate surface for texture\n");
+        goto error;
     }
 
-    for (uint32_t y = 0; y < height; y++) {
-        uint32_t *out_data = (uint32_t *) texture->surface.image + (y * texture->surface.pitch);
-        png_read_row(png_ptr, (png_bytep) rowData, nullptr);
-        for (uint32_t x = 0; x < width; x++) {
-            if (colorType == PNG_COLOR_TYPE_RGB_ALPHA) {
-                uint32_t i = (x) *4;
-                *out_data  = rowData[i] << 24 | rowData[i + 1] << 16 | rowData[i + 2] << 8 | rowData[i + 3];
-            } else if (colorType == PNG_COLOR_TYPE_RGB) {
-                uint32_t i = (x) *3;
-                *out_data  = rowData[i] << 24 | rowData[i + 1] << 16 | rowData[i + 2] << 8 | 0xFF;
-            }
-            out_data++;
-        }
+    if (!png_image_finish_read(&image, nullptr,
+                               texture->surface.image,
+                               texture->surface.pitch * 4,
+                               nullptr)) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to read PNG image: %s\n", image.message);
+        goto error;
     }
 
-    delete[] rowData;
-    png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
-
-    // todo: create texture with optimal tile format and use GX2CopySurface to convert from linear to tiled format
-    GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_TEXTURE, texture->surface.image, texture->surface.imageSize);
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_TEXTURE,
+                  texture->surface.image, texture->surface.imageSize);
 
     return texture;
+
+error:
+    if (texture) {
+        std::free(texture->surface.image);
+    }
+    std::free(texture);
+    png_image_free(&image);
+    return nullptr;
 }
