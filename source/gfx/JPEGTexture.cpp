@@ -23,7 +23,7 @@ GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
         goto error;
     }
 
-    texture = static_cast<GX2Texture*>(std::malloc(sizeof(GX2Texture)));
+    texture = static_cast<GX2Texture *>(std::malloc(sizeof(GX2Texture)));
     if (!texture) {
         goto error;
     }
@@ -59,7 +59,7 @@ GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
 
     if (tjDecompress2(handle,
                       data.data(), data.size(),
-                      static_cast<unsigned char*>(texture->surface.image),
+                      static_cast<unsigned char *>(texture->surface.image),
                       width,
                       texture->surface.pitch * 4,
                       height,
@@ -74,7 +74,7 @@ GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
                   texture->surface.image, texture->surface.imageSize);
     return texture;
 
- error:
+error:
     if (texture) {
         std::free(texture->surface.image);
     }
