@@ -6,7 +6,7 @@
 #include <png.h>
 
 GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
-    GX2Texture *texture   = nullptr;
+    GX2Texture *texture = nullptr;
 
     png_image image{};
     image.version = PNG_IMAGE_VERSION;
