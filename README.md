@@ -7,10 +7,11 @@ other modules of the environment are loading.
 Place the `01_splashscreen.rpx` in the `[ENVIRONMENT]/modules/setup` folder and run the
 EnvironmentLoader. The module will attempt to load the splash image, in this order:
   1. `[ENVIRONMENT]/splash.png`
-  2. `[ENVIRONMENT]/splash.tga`
-  3. A random image from the directory `[ENVIRONMENT]/splashes/`.
+  2. `[ENVIRONMENT]/splash.jpg` or `[ENVIRONMENT]/splash.jpeg`
+  3. `[ENVIRONMENT]/splash.tga`
+  4. A random image (PNG, JPEG or TGA) from the directory `[ENVIRONMENT]/splashes/`.
 
-If no splash screen is found on the sd card, this module will effectively do nothing.
+If no splash image is found on the sd card, this module will effectively do nothing.
 
 **Notes:**
   - `[ENVIRONMENT]` is the directory of the environment, for Aroma with would be `sd:/wiiu/enviroments/aroma/splash.png`
@@ -22,14 +23,19 @@ If no splash screen is found on the sd card, this module will effectively do not
 ### Logging
 Building via `make` only logs errors (via OSReport). To enable logging via the [LoggingModule](https://github.com/wiiu-env/LoggingModule) set `DEBUG` to `1` or `VERBOSE`.
 
-`make` Logs errors only (via OSReport).  
-`make DEBUG=1` Enables information and error logging via [LoggingModule](https://github.com/wiiu-env/LoggingModule).  
-`make DEBUG=VERBOSE` Enables verbose information and error logging via [LoggingModule](https://github.com/wiiu-env/LoggingModule).
+  - `make` Logs errors only (via OSReport).
+  - `make DEBUG=1` Enables information and error logging via [LoggingModule](https://github.com/wiiu-env/LoggingModule).
+  - `make DEBUG=VERBOSE` Enables verbose information and error logging via [LoggingModule](https://github.com/wiiu-env/LoggingModule).
 
 If the [LoggingModule](https://github.com/wiiu-env/LoggingModule) is not present, it'll fall back to UDP (Port 4405) and [CafeOS](https://github.com/wiiu-env/USBSerialLoggingModule) logging.
 
 ## Building
-For building, you just need [wut](https://github.com/devkitPro/wut/) installed, then use the `make` command.
+For building, you need to install (via devkitPro's `pacman`):
+  - [wut](https://github.com/devkitPro/wut/)
+  - ppc-libpng
+  - ppc-libjpeg-turbo
+
+Then use the `make` command.
 
 ## Building using the Dockerfile
 

@@ -38,7 +38,7 @@ CXXFLAGS	:= $(CFLAGS) -std=c++23 -fno-rtti
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-g $(ARCH) $(RPXSPECS) --entry=_start -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lpng -lwut -lz
+LIBS	:= -lpng -lturbojpeg -lwut -lz
 
 ifeq ($(DEBUG),1)
 CXXFLAGS += -DDEBUG -g
