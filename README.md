@@ -5,12 +5,12 @@ other modules of the environment are loading.
 
 ## Usage
 Place the `01_splashscreen.rpx` in the `[ENVIRONMENT]/modules/setup` folder and run the
-EnvironmentLoader. The module will attempt to load the splash image, in this order:
+EnvironmentLoader. The module will attempt to load the splash image in this order:
   1. `[ENVIRONMENT]/splash.png`
   2. `[ENVIRONMENT]/splash.tga`
   3. A random image from the directory `[ENVIRONMENT]/splashes/`.
 
-If no splash screen is found on the sd card, this module will effectively do nothing.
+If no splash screen is found on the SD card, this module will effectively do nothing.
 
 **Notes:**
   - `[ENVIRONMENT]` is the directory of the environment, for Aroma with would be `sd:/wiiu/enviroments/aroma/splash.png`
