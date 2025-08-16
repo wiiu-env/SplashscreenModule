@@ -1,6 +1,6 @@
 [![CI-Release](https://github.com/wiiu-env/SplashscreenModule/actions/workflows/ci.yml/badge.svg)](https://github.com/wiiu-env/SplashscreenModule/actions/workflows/ci.yml)
 # SplashscreenModule
-This module is supposed to be loaded with the [EnvironmentLoader](https://github.com/wiiu-env/EnvironmentLoader). It will render a "splash screen" from the sd card while
+This module is supposed to be loaded with the [EnvironmentLoader](https://github.com/wiiu-env/EnvironmentLoader). It will render a "splash screen" from the SD card while
 other modules of the environment are loading.
 
 ## Usage
