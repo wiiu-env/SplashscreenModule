@@ -9,13 +9,10 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
-#include <coreinit/time.h>
 #include <cstdlib>
 #include <gx2/draw.h>
 #include <gx2/mem.h>
 #include <gx2r/draw.h>
-#include <optional>
-#include <random>
 #include <whb/log.h>
 
 /*
@@ -122,14 +119,6 @@ uint8_t empty_png[119] = {
         0x0C, 0x0C, 0x00, 0x00, 0x0E, 0x00, 0x01, 0x7A, 0xB1, 0xB9, 0x30, 0x00,
         0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82};
 
-static std::filesystem::path ToLower(const std::filesystem::path &p) {
-    std::string result;
-    for (auto c : p.string()) {
-        result.push_back(std::tolower(static_cast<unsigned char>(c)));
-    }
-    return result;
-}
-
 static GX2Texture *LoadImageAsTexture(const std::filesystem::path &filename) {
     std::vector<uint8_t> buffer;
     if (LoadFileIntoBuffer(filename, buffer)) {
@@ -143,18 +132,6 @@ static GX2Texture *LoadImageAsTexture(const std::filesystem::path &filename) {
         }
     }
     return nullptr;
-}
-
-static std::size_t get_random_index(std::size_t size) {
-    static std::optional<std::minstd_rand> engine;
-    if (!engine) {
-        auto t = static_cast<std::uint64_t>(OSGetTime());
-        std::seed_seq seeder{static_cast<std::uint32_t>(t),
-                             static_cast<std::uint32_t>(t >> 32)};
-        engine.emplace(seeder);
-    }
-    std::uniform_int_distribution<std::size_t> dist{0, size - 1};
-    return dist(*engine);
 }
 
 SplashScreenDrawer::SplashScreenDrawer(const std::filesystem::path &envDir) {
@@ -241,7 +218,7 @@ void SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
             }
         }
         if (!candidates.empty()) {
-            auto selected = get_random_index(candidates.size());
+            auto selected = GetRandomIndex(candidates.size());
             mTexture      = LoadImageAsTexture(candidates[selected]);
             if (mTexture) {
                 return;
