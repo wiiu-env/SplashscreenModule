@@ -137,14 +137,12 @@ static GX2Texture *LoadImageAsTexture(const std::filesystem::path &filename) {
 
 SplashScreenDrawer::SplashScreenDrawer(const std::filesystem::path &envDir) {
     // 1: Use env dir.
-    LoadTextureFrom(envDir);
-    // 2: Use general dir.
-    if (!mTexture) {
-        LoadTextureFrom("fs:/vol/external01/wiiu");
-    }
-    // 3: Use fallback empty texture.
-    if (!mTexture) {
-        mTexture = PNG_LoadTexture(empty_png);
+    if (!LoadTextureFrom(envDir)) {
+        // 2: Use general dir.
+        if (!LoadTextureFrom("fs:/vol/external01/wiiu")) {
+            // 3: Use fallback empty texture.
+            mTexture = PNG_LoadTexture(empty_png);
+        }
     }
 
     InitResources();
@@ -189,9 +187,9 @@ void SplashScreenDrawer::InitResources() {
     GX2InitSampler(&mSampler, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
 }
 
-void SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
+bool SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
     if (dir.empty()) {
-        return;
+        return false;
     }
 
     const std::array extensions = {
@@ -206,7 +204,7 @@ void SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
         auto fname = std::string{"splash"} + ext;
         mTexture = LoadImageAsTexture(dir / fname);
         if (mTexture) {
-            return;
+            return true;
         }
     }
 
@@ -225,11 +223,15 @@ void SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
         if (!candidates.empty()) {
             auto selected = GetRandomIndex(candidates.size());
             mTexture      = LoadImageAsTexture(candidates[selected]);
+            if (mTexture) {
+                return true;
+            }
         }
     }
     catch (std::exception &e) {
         DEBUG_FUNCTION_LINE_INFO("Loading texture failed: %s", e.what());
     }
+    return false;
 }
 
 void SplashScreenDrawer::Draw() {

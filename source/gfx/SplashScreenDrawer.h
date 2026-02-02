@@ -50,5 +50,5 @@ private:
 
     void InitResources();
 
-    void LoadTextureFrom(const std::filesystem::path &dir);
+    bool LoadTextureFrom(const std::filesystem::path &dir);
 };
