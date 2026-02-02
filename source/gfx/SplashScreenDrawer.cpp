@@ -193,16 +193,15 @@ bool SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
     }
 
     const std::array extensions = {
-        ".png",
-        ".jpg",
-        ".jpeg",
-        ".tga"
-    };
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tga"};
 
     // First try the splash.* image.
     for (const auto &ext : extensions) {
         auto fname = std::string{"splash"} + ext;
-        mTexture = LoadImageAsTexture(dir / fname);
+        mTexture   = LoadImageAsTexture(dir / fname);
         if (mTexture) {
             return true;
         }
@@ -227,8 +226,7 @@ bool SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
                 return true;
             }
         }
-    }
-    catch (std::exception &e) {
+    } catch (std::exception &e) {
         DEBUG_FUNCTION_LINE_INFO("Loading texture failed: %s", e.what());
     }
     return false;
