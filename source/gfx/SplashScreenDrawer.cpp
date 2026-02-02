@@ -6,6 +6,8 @@
 #include "gfx.h"
 #include "utils/logger.h"
 #include "utils/utils.h"
+#include <algorithm>
+#include <array>
 #include <cctype>
 #include <coreinit/time.h>
 #include <cstdlib>
@@ -143,11 +145,6 @@ static GX2Texture *LoadImageAsTexture(const std::filesystem::path &filename) {
     return nullptr;
 }
 
-SplashScreenDrawer::SplashScreenDrawer() {
-    mTexture = PNG_LoadTexture(empty_png);
-    InitResources();
-}
-
 static std::size_t get_random_index(std::size_t size) {
     static std::optional<std::minstd_rand> engine;
     if (!engine) {
@@ -160,39 +157,16 @@ static std::size_t get_random_index(std::size_t size) {
     return dist(*engine);
 }
 
-SplashScreenDrawer::SplashScreenDrawer(const std::filesystem::path &splash_base_path) {
-    if (splash_base_path.empty())
-        throw std::runtime_error{"empty base dir"};
-    mTexture = LoadImageAsTexture(splash_base_path / "splash.png");
+SplashScreenDrawer::SplashScreenDrawer(const std::filesystem::path &envDir) {
+    // 1: Use env dir.
+    LoadTextureFrom(envDir);
+    // 2: Use general dir.
     if (!mTexture) {
-        mTexture = LoadImageAsTexture(splash_base_path / "splash.jpg");
+        LoadTextureFrom("fs:/vol/external01/wiiu");
     }
+    // 3: Use fallback empty texture.
     if (!mTexture) {
-        mTexture = LoadImageAsTexture(splash_base_path / "splash.jpeg");
-    }
-    if (!mTexture) {
-        mTexture = LoadImageAsTexture(splash_base_path / "splash.tga");
-    }
-    if (!mTexture) {
-        // try to load a random one from "splashes/*"
-        std::vector<std::filesystem::path> candidates;
-        for (const auto &entry : std::filesystem::directory_iterator{splash_base_path / "splashes"}) {
-            if (!entry.is_regular_file()) {
-                continue;
-            }
-            auto ext = ToLower(entry.path().extension());
-            if (ext == ".png" || ext == ".tga" || ext == ".jpg" || ext == ".jpeg") {
-                candidates.push_back(entry.path());
-            }
-        }
-        if (!candidates.empty()) {
-            auto selected = get_random_index(candidates.size());
-            mTexture      = LoadImageAsTexture(candidates[selected]);
-        }
-    }
-
-    if (!mTexture) {
-        throw std::runtime_error{"failed to load texture"};
+        mTexture = PNG_LoadTexture(empty_png);
     }
 
     InitResources();
@@ -235,6 +209,45 @@ void SplashScreenDrawer::InitResources() {
     GX2RUnlockBufferEx(&mTexCoordBuffer, GX2R_RESOURCE_BIND_NONE);
 
     GX2InitSampler(&mSampler, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
+}
+
+void SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
+    using namespace std::literals;
+
+    const std::array extensions = {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".tga"
+    };
+
+    if (!dir.empty()) {
+        for (const auto& ext : extensions) {
+            mTexture = LoadImageAsTexture(dir / ("splash"s + ext));
+            if (mTexture) {
+                return;
+            }
+        }
+
+        // Make a list of all candidates in splashes/* to select one at random.
+        std::vector<std::filesystem::path> candidates;
+        for (const auto &entry : std::filesystem::directory_iterator{dir / "splashes"}) {
+            if (!entry.is_regular_file()) {
+                continue;
+            }
+            auto ext = ToLower(entry.path().extension());
+            if (std::ranges::contains(extensions, ext)) {
+                candidates.push_back(entry.path());
+            }
+        }
+        if (!candidates.empty()) {
+            auto selected = get_random_index(candidates.size());
+            mTexture      = LoadImageAsTexture(candidates[selected]);
+            if (mTexture) {
+                return;
+            }
+        }
+    }
 }
 
 void SplashScreenDrawer::Draw() {

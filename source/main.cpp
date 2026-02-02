@@ -4,12 +4,11 @@
 #include "utils/utils.h"
 #include "version.h"
 #include <exception>
-#include <optional>
 
 #define MODULE_VERSION      "v0.3"
 #define MODULE_VERSION_FULL MODULE_VERSION SPLASHSCREEN_MODULE_VERSION_EXTRA
 
-int32_t main(int32_t argc, char **argv) {
+int main(int argc, char **argv) {
     initLogging();
     DEBUG_FUNCTION_LINE_INFO("Running SplashScreen Module " MODULE_VERSION_FULL "");
 
@@ -21,20 +20,8 @@ int32_t main(int32_t argc, char **argv) {
 
     GfxInit();
     {
-        std::optional<SplashScreenDrawer> splashScreenDrawer;
-        for (const auto &dir : {envDir, path{"fs:/vol/external01/wiiu"}}) {
-            try {
-                splashScreenDrawer.emplace(dir);
-                break;
-            } catch (std::exception &e) {
-                DEBUG_FUNCTION_LINE_INFO("Failed to use %s: %s", dir.c_str(), e.what());
-            }
-        }
-        // Fallback: use built-in empty splash.
-        if (!splashScreenDrawer) {
-            splashScreenDrawer.emplace();
-        }
-        splashScreenDrawer->Draw();
+        SplashScreenDrawer splashScreenDrawer{envDir};
+        splashScreenDrawer.Draw();
     }
     GfxShutdown();
 
