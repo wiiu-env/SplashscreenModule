@@ -13,6 +13,7 @@
 #include <gx2/draw.h>
 #include <gx2/mem.h>
 #include <gx2r/draw.h>
+#include <string>
 #include <whb/log.h>
 
 /*
@@ -189,7 +190,9 @@ void SplashScreenDrawer::InitResources() {
 }
 
 void SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
-    using namespace std::literals;
+    if (dir.empty()) {
+        return;
+    }
 
     const std::array extensions = {
         ".png",
@@ -198,31 +201,31 @@ void SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
         ".tga"
     };
 
-    if (!dir.empty()) {
-        for (const auto& ext : extensions) {
-            mTexture = LoadImageAsTexture(dir / ("splash"s + ext));
-            if (mTexture) {
-                return;
-            }
+    // First try the splash.* image.
+    for (const auto &ext : extensions) {
+        auto fname = std::string{"splash"} + ext;
+        mTexture = LoadImageAsTexture(dir / fname);
+        if (mTexture) {
+            return;
         }
+    }
 
-        // Make a list of all candidates in splashes/* to select one at random.
-        std::vector<std::filesystem::path> candidates;
-        for (const auto &entry : std::filesystem::directory_iterator{dir / "splashes"}) {
-            if (!entry.is_regular_file()) {
-                continue;
-            }
-            auto ext = ToLower(entry.path().extension());
-            if (std::ranges::contains(extensions, ext)) {
-                candidates.push_back(entry.path());
-            }
+    // Make a list of all candidates in splashes/* to select one at random.
+    std::vector<std::filesystem::path> candidates;
+    for (const auto &entry : std::filesystem::directory_iterator{dir / "splashes"}) {
+        if (!entry.is_regular_file()) {
+            continue;
         }
-        if (!candidates.empty()) {
-            auto selected = GetRandomIndex(candidates.size());
-            mTexture      = LoadImageAsTexture(candidates[selected]);
-            if (mTexture) {
-                return;
-            }
+        auto ext = ToLower(entry.path().extension());
+        if (std::ranges::contains(extensions, ext)) {
+            candidates.push_back(entry.path());
+        }
+    }
+    if (!candidates.empty()) {
+        auto selected = GetRandomIndex(candidates.size());
+        mTexture      = LoadImageAsTexture(candidates[selected]);
+        if (mTexture) {
+            return;
         }
     }
 }
