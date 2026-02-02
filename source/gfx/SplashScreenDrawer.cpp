@@ -210,23 +210,25 @@ void SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
         }
     }
 
-    // Make a list of all candidates in splashes/* to select one at random.
-    std::vector<std::filesystem::path> candidates;
-    for (const auto &entry : std::filesystem::directory_iterator{dir / "splashes"}) {
-        if (!entry.is_regular_file()) {
-            continue;
+    try {
+        // Make a list of all candidates in splashes/* to select one at random.
+        std::vector<std::filesystem::path> candidates;
+        for (const auto &entry : std::filesystem::directory_iterator{dir / "splashes"}) {
+            if (!entry.is_regular_file()) {
+                continue;
+            }
+            auto ext = ToLower(entry.path().extension());
+            if (std::ranges::contains(extensions, ext)) {
+                candidates.push_back(entry.path());
+            }
         }
-        auto ext = ToLower(entry.path().extension());
-        if (std::ranges::contains(extensions, ext)) {
-            candidates.push_back(entry.path());
+        if (!candidates.empty()) {
+            auto selected = GetRandomIndex(candidates.size());
+            mTexture      = LoadImageAsTexture(candidates[selected]);
         }
     }
-    if (!candidates.empty()) {
-        auto selected = GetRandomIndex(candidates.size());
-        mTexture      = LoadImageAsTexture(candidates[selected]);
-        if (mTexture) {
-            return;
-        }
+    catch (std::exception &e) {
+        DEBUG_FUNCTION_LINE_INFO("Loading texture failed: %s", e.what());
     }
 }
 
