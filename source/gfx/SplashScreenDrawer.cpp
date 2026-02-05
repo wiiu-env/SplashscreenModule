@@ -3,6 +3,7 @@
 #include "PNGTexture.h"
 #include "ShaderSerializer.h"
 #include "TGATexture.h"
+#include "WEBPTexture.h"
 #include "gfx.h"
 #include "utils/logger.h"
 #include "utils/utils.h"
@@ -130,6 +131,8 @@ static GX2Texture *LoadImageAsTexture(const std::filesystem::path &filename) {
             return JPEG_LoadTexture(buffer);
         } else if (ext == ".tga") {
             return TGA_LoadTexture(buffer);
+        } else if (ext == ".webp") {
+            return WEBP_LoadTexture(buffer);
         }
     }
     return nullptr;
@@ -196,7 +199,8 @@ bool SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
             ".png",
             ".jpg",
             ".jpeg",
-            ".tga"};
+            ".tga",
+            ".webp"};
 
     // First try the splash.* image.
     for (const auto &ext : extensions) {

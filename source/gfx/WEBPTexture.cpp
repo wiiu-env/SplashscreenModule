@@ -1,29 +1,16 @@
-#include "JPEGTexture.h"
+#include "WEBPTexture.h"
 #include "utils/logger.h"
 #include <cstdlib>
 #include <cstring>
 #include <gx2/mem.h>
-#include <turbojpeg.h>
+#include <webp/decode.h>
 
-GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
+GX2Texture *WEBP_LoadTexture(std::span<uint8_t> data) {
     GX2Texture *texture = nullptr;
-    int height;
-    int width;
+    int width, height;
 
-    tjhandle handle = tj3Init(TJINIT_DECOMPRESS);
-    if (!handle) {
-        goto error;
-    }
-
-    if (tj3DecompressHeader(handle, data.data(), data.size())) {
-        DEBUG_FUNCTION_LINE_ERR("Failed to parse JPEG header: %s\n", tj3GetErrorStr(handle));
-        goto error;
-    }
-
-    width  = tj3Get(handle, TJPARAM_JPEGWIDTH);
-    height = tj3Get(handle, TJPARAM_JPEGHEIGHT);
-    if (width == -1 || height == -1) {
-        DEBUG_FUNCTION_LINE_ERR("Unknown JPEG image size\n");
+    if (!WebPGetInfo(data.data(), data.size(), &width, &height)) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to parse WEBP header\n");
         goto error;
     }
 
@@ -64,16 +51,13 @@ GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
         goto error;
     }
 
-    if (tj3Decompress8(handle,
-                       data.data(), data.size(),
-                       static_cast<unsigned char *>(texture->surface.image),
-                       texture->surface.pitch * 4,
-                       TJPF_RGBA)) {
-        DEBUG_FUNCTION_LINE_ERR("Failed to read JPEG image: %s\n", tj3GetErrorStr(handle));
+    if (!WebPDecodeRGBAInto(data.data(), data.size(),
+                            reinterpret_cast<uint8_t *>(texture->surface.image),
+                            texture->surface.imageSize,
+                            texture->surface.pitch * 4)) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to decode WEBP image\n");
         goto error;
     }
-
-    tj3Destroy(handle);
 
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_TEXTURE,
                   texture->surface.image, texture->surface.imageSize);
@@ -85,6 +69,5 @@ error:
         std::free(texture->surface.image);
     }
     std::free(texture);
-    tj3Destroy(handle);
     return nullptr;
 }
