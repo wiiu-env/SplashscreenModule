@@ -2,6 +2,8 @@ void __init_wut_malloc();
 
 void __init_wut_newlib();
 
+void __init_wut_thread();
+
 void __init_wut_devoptab();
 
 void __attribute__((weak)) __init_wut_socket();
@@ -18,6 +20,7 @@ void __attribute__((weak)) __fini_wut_socket();
 
 void __attribute__((weak))
 __init_wut_() {
+    __init_wut_thread();
     __init_wut_malloc();
     __init_wut_newlib();
     __init_wut_devoptab();
