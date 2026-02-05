@@ -5,22 +5,21 @@ other modules of the environment are loading.
 
 ## Usage
   1. Place the `01_splashscreen.rpx` in the `[ENVIRONMENT]/modules/setup` folder.
-  2. Place your splash images (PNG, TGA or JPEG) in the folder `SD:/wiiu/splashes/`.
+  2. Place your splash images (PNG, JPEG, TGA or WEBP) in the folder `SD:/wiiu/splashes/`.
 
 **Notes:**
   - `[ENVIRONMENT]` is the directory of the environment, for Aroma with would be `SD:/wiiu/enviroments/aroma`.
   - When using a TGA image, make sure its 24 bit and uncompressed,
-  - In theory any (reasonable) resolution is supported, something like 1280x720 is recommended.
+  - In theory any (reasonable) resolution is supported, **1280x720** is recommended for best quality on both gamepad and TV screens.
 
 ## Path priority
 The module will attempt to load a splash image from multiple places, in this order:
-  1. `[ENVIRONMENT]/splash.{png,jpg,jpeg,tga}`
-  2. `[ENVIRONMENT]/splashes/*.{png,jpg,jpeg,tga}` (selected randomly)
-  3. `SD:/wiiu/splash.{png,jpg,jpeg,tga}`
-  4. `SD:/wiiu/splashes/*.{png,jpg,jpeg,tga}` (selected randomly)
+  1. `[ENVIRONMENT]/`: an image named `splash.EXT`
+  2. `[ENVIRONMENT]/splashes/`: a **random** image in that folder.
+  3. `SD:/wiiu/`: an image named `splash.EXT`
+  4. `SD:/wiiu/splashes/`: a **random** image in that folder.
 
-You should use the last path (`SD:/wiiu/splashes/`), and leave the others for when you
-want to override the splash.
+Where `EXT` can be `png`, `jpg`, `jpeg`, `tga` or `webp`.
 
 ## Buildflags
 
@@ -36,8 +35,9 @@ If the [LoggingModule](https://github.com/wiiu-env/LoggingModule) is not present
 ## Building
 For building, you need to install (via devkitPro's `pacman`):
   - [wut](https://github.com/devkitPro/wut/)
-  - ppc-libpng
   - ppc-libjpeg-turbo
+  - ppc-libpng
+  - ppc-libwebp
 
 Then use the `make` command.
 
