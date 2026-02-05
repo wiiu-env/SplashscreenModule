@@ -11,6 +11,7 @@
 #include <array>
 #include <cctype>
 #include <cstdlib>
+#include <exception>
 #include <gx2/draw.h>
 #include <gx2/mem.h>
 #include <gx2r/draw.h>

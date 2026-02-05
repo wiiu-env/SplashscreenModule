@@ -36,18 +36,18 @@ bool LoadFileIntoBuffer(const std::filesystem::path &filename, std::vector<uint8
 }
 
 namespace {
-    std::optional<std::minstd_rand> RandomEngine;
+    std::optional<std::minstd_rand> sRandomEngine;
 } // namespace
 
 std::size_t GetRandomIndex(std::size_t size) {
-    if (!RandomEngine) {
+    if (!sRandomEngine) {
         auto t = static_cast<std::uint64_t>(OSGetTime());
         std::seed_seq seeder{static_cast<std::uint32_t>(t),
                              static_cast<std::uint32_t>(t >> 32)};
-        RandomEngine.emplace(seeder);
+        sRandomEngine.emplace(seeder);
     }
     std::uniform_int_distribution<std::size_t> dist{0, size - 1};
-    return dist(*RandomEngine);
+    return dist(*sRandomEngine);
 }
 
 std::filesystem::path ToLower(const std::filesystem::path &p) {
