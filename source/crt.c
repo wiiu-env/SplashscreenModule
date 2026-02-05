@@ -10,8 +10,6 @@ void __fini_wut_malloc();
 
 void __fini_wut_newlib();
 
-void __fini_wut_stdcpp();
-
 void __fini_wut_devoptab();
 
 void __fini();
