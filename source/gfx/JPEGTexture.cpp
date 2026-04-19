@@ -1,23 +1,31 @@
-#include "PNGTexture.h"
+#include "JPEGTexture.h"
 #include "utils/logger.h"
 #include <cstdlib>
 #include <cstring>
 #include <gx2/mem.h>
-#include <png.h>
+#include <turbojpeg.h>
 
-GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
+GX2Texture *JPEG_LoadTexture(std::span<uint8_t> data) {
     GX2Texture *texture = nullptr;
+    int height;
+    int width;
 
-    png_image image{};
-    image.version = PNG_IMAGE_VERSION;
-
-    if (!png_image_begin_read_from_memory(&image, data.data(), data.size())) {
-        DEBUG_FUNCTION_LINE_ERR("Failed to parse PNG header: %s\n", image.message);
+    tjhandle handle = tj3Init(TJINIT_DECOMPRESS);
+    if (!handle) {
         goto error;
     }
 
-    // Request the output to always be RGBA
-    image.format = PNG_FORMAT_RGBA;
+    if (tj3DecompressHeader(handle, data.data(), data.size())) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to parse JPEG header: %s\n", tj3GetErrorStr(handle));
+        goto error;
+    }
+
+    width  = tj3Get(handle, TJPARAM_JPEGWIDTH);
+    height = tj3Get(handle, TJPARAM_JPEGHEIGHT);
+    if (width == -1 || height == -1) {
+        DEBUG_FUNCTION_LINE_ERR("Unknown JPEG image size\n");
+        goto error;
+    }
 
     texture = static_cast<GX2Texture *>(std::malloc(sizeof(GX2Texture)));
     if (!texture) {
@@ -26,8 +34,8 @@ GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
     }
 
     std::memset(texture, 0, sizeof(GX2Texture));
-    texture->surface.width     = image.width;
-    texture->surface.height    = image.height;
+    texture->surface.width     = width;
+    texture->surface.height    = height;
     texture->surface.depth     = 1;
     texture->surface.mipLevels = 1;
     texture->surface.format    = GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
@@ -56,13 +64,16 @@ GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
         goto error;
     }
 
-    if (!png_image_finish_read(&image, nullptr,
-                               texture->surface.image,
-                               texture->surface.pitch * 4,
-                               nullptr)) {
-        DEBUG_FUNCTION_LINE_ERR("Failed to read PNG image: %s\n", image.message);
+    if (tj3Decompress8(handle,
+                       data.data(), data.size(),
+                       static_cast<unsigned char *>(texture->surface.image),
+                       texture->surface.pitch * 4,
+                       TJPF_RGBA)) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to read JPEG image: %s\n", tj3GetErrorStr(handle));
         goto error;
     }
+
+    tj3Destroy(handle);
 
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_TEXTURE,
                   texture->surface.image, texture->surface.imageSize);
@@ -74,6 +85,6 @@ error:
         std::free(texture->surface.image);
     }
     std::free(texture);
-    png_image_free(&image);
+    tj3Destroy(handle);
     return nullptr;
 }

@@ -1,23 +1,18 @@
-#include "PNGTexture.h"
+#include "WEBPTexture.h"
 #include "utils/logger.h"
 #include <cstdlib>
 #include <cstring>
 #include <gx2/mem.h>
-#include <png.h>
+#include <webp/decode.h>
 
-GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
+GX2Texture *WEBP_LoadTexture(std::span<uint8_t> data) {
     GX2Texture *texture = nullptr;
+    int width, height;
 
-    png_image image{};
-    image.version = PNG_IMAGE_VERSION;
-
-    if (!png_image_begin_read_from_memory(&image, data.data(), data.size())) {
-        DEBUG_FUNCTION_LINE_ERR("Failed to parse PNG header: %s\n", image.message);
+    if (!WebPGetInfo(data.data(), data.size(), &width, &height)) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to parse WEBP header\n");
         goto error;
     }
-
-    // Request the output to always be RGBA
-    image.format = PNG_FORMAT_RGBA;
 
     texture = static_cast<GX2Texture *>(std::malloc(sizeof(GX2Texture)));
     if (!texture) {
@@ -26,8 +21,8 @@ GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
     }
 
     std::memset(texture, 0, sizeof(GX2Texture));
-    texture->surface.width     = image.width;
-    texture->surface.height    = image.height;
+    texture->surface.width     = width;
+    texture->surface.height    = height;
     texture->surface.depth     = 1;
     texture->surface.mipLevels = 1;
     texture->surface.format    = GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
@@ -56,11 +51,11 @@ GX2Texture *PNG_LoadTexture(std::span<uint8_t> data) {
         goto error;
     }
 
-    if (!png_image_finish_read(&image, nullptr,
-                               texture->surface.image,
-                               texture->surface.pitch * 4,
-                               nullptr)) {
-        DEBUG_FUNCTION_LINE_ERR("Failed to read PNG image: %s\n", image.message);
+    if (!WebPDecodeRGBAInto(data.data(), data.size(),
+                            reinterpret_cast<uint8_t *>(texture->surface.image),
+                            texture->surface.imageSize,
+                            texture->surface.pitch * 4)) {
+        DEBUG_FUNCTION_LINE_ERR("Failed to decode WEBP image\n");
         goto error;
     }
 
@@ -74,6 +69,5 @@ error:
         std::free(texture->surface.image);
     }
     std::free(texture);
-    png_image_free(&image);
     return nullptr;
 }

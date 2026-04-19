@@ -1,16 +1,21 @@
 #include "SplashScreenDrawer.h"
+#include "JPEGTexture.h"
 #include "PNGTexture.h"
 #include "ShaderSerializer.h"
 #include "TGATexture.h"
+#include "WEBPTexture.h"
 #include "gfx.h"
 #include "utils/logger.h"
 #include "utils/utils.h"
+#include <algorithm>
+#include <array>
 #include <cctype>
-#include <coreinit/time.h>
+#include <cstdlib>
+#include <exception>
 #include <gx2/draw.h>
 #include <gx2/mem.h>
 #include <gx2r/draw.h>
-#include <random>
+#include <string>
 #include <whb/log.h>
 
 /*
@@ -117,63 +122,37 @@ uint8_t empty_png[119] = {
         0x0C, 0x0C, 0x00, 0x00, 0x0E, 0x00, 0x01, 0x7A, 0xB1, 0xB9, 0x30, 0x00,
         0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82};
 
-static std::filesystem::path ToLower(const std::filesystem::path &p) {
-    std::string result;
-    for (auto c : p.string()) {
-        result.push_back(std::tolower(static_cast<unsigned char>(c)));
-    }
-    return result;
-}
-
 static GX2Texture *LoadImageAsTexture(const std::filesystem::path &filename) {
     std::vector<uint8_t> buffer;
     if (LoadFileIntoBuffer(filename, buffer)) {
         auto ext = ToLower(filename.extension());
         if (ext == ".png") {
             return PNG_LoadTexture(buffer);
+        } else if (ext == ".jpg" || ext == ".jpeg") {
+            return JPEG_LoadTexture(buffer);
         } else if (ext == ".tga") {
             return TGA_LoadTexture(buffer);
+        } else if (ext == ".webp") {
+            return WEBP_LoadTexture(buffer);
         }
     }
     return nullptr;
 }
 
-SplashScreenDrawer::SplashScreenDrawer(const std::filesystem::path &splash_base_path) {
-    mTexture = LoadImageAsTexture(splash_base_path / "splash.png");
-    if (!mTexture) {
-        mTexture = LoadImageAsTexture(splash_base_path / "splash.tga");
-    }
-    if (!mTexture) {
-        // try to load a random one from "splashes/*"
-        try {
-            std::vector<std::filesystem::path> candidates;
-            for (const auto &entry : std::filesystem::directory_iterator{splash_base_path / "splashes"}) {
-                if (!entry.is_regular_file()) {
-                    continue;
-                }
-                auto ext = ToLower(entry.path().extension());
-                if (ext == ".png" || ext == ".tga") {
-                    candidates.push_back(entry.path());
-                }
-            }
-            if (!candidates.empty()) {
-                auto t = static_cast<std::uint64_t>(OSGetTime());
-                std::seed_seq seed{static_cast<std::uint32_t>(t),
-                                   static_cast<std::uint32_t>(t >> 32)};
-                std::minstd_rand eng{seed};
-                std::uniform_int_distribution<std::size_t> dist{0, candidates.size() - 1};
-                auto selected = dist(eng);
-                mTexture      = LoadImageAsTexture(candidates[selected]);
-            }
-        } catch (std::exception &) {}
-    }
-    if (!mTexture) {
-        mTexture = PNG_LoadTexture(empty_png);
-    }
-    if (!mTexture) {
-        return;
+SplashScreenDrawer::SplashScreenDrawer(const std::filesystem::path &envDir) {
+    // 1: Use env dir.
+    if (!LoadTextureFrom(envDir)) {
+        // 2: Use general dir.
+        if (!LoadTextureFrom("fs:/vol/external01/wiiu")) {
+            // 3: Use fallback empty texture.
+            mTexture = PNG_LoadTexture(empty_png);
+        }
     }
 
+    InitResources();
+}
+
+void SplashScreenDrawer::InitResources() {
     // create shader group
     mVertexShaderWrapper = DeserializeVertexShader(s_textureVertexShaderCompiled);
     mPixelShaderWrapper  = DeserializePixelShader(s_texturePixelShaderCompiled);
@@ -212,6 +191,52 @@ SplashScreenDrawer::SplashScreenDrawer(const std::filesystem::path &splash_base_
     GX2InitSampler(&mSampler, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
 }
 
+bool SplashScreenDrawer::LoadTextureFrom(const std::filesystem::path &dir) {
+    if (dir.empty()) {
+        return false;
+    }
+
+    const std::array extensions = {
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tga",
+            ".webp"};
+
+    // First try the splash.* image.
+    for (const auto &ext : extensions) {
+        auto fname = std::string{"splash"} + ext;
+        mTexture   = LoadImageAsTexture(dir / fname);
+        if (mTexture) {
+            return true;
+        }
+    }
+
+    try {
+        // Make a list of all candidates in splashes/* to select one at random.
+        std::vector<std::filesystem::path> candidates;
+        for (const auto &entry : std::filesystem::directory_iterator{dir / "splashes"}) {
+            if (!entry.is_regular_file()) {
+                continue;
+            }
+            auto ext = ToLower(entry.path().extension());
+            if (std::ranges::contains(extensions, ext)) {
+                candidates.push_back(entry.path());
+            }
+        }
+        if (!candidates.empty()) {
+            auto selected = GetRandomIndex(candidates.size());
+            mTexture      = LoadImageAsTexture(candidates[selected]);
+            if (mTexture) {
+                return true;
+            }
+        }
+    } catch (std::exception &e) {
+        DEBUG_FUNCTION_LINE_INFO("Loading texture failed: %s", e.what());
+    }
+    return false;
+}
+
 void SplashScreenDrawer::Draw() {
     if (!mTexture) {
         DEBUG_FUNCTION_LINE_INFO("Texture is missing");
@@ -241,10 +266,10 @@ SplashScreenDrawer::~SplashScreenDrawer() {
     GX2RDestroyBufferEx(&mTexCoordBuffer, GX2R_RESOURCE_BIND_NONE);
     if (mTexture) {
         if (mTexture->surface.image != nullptr) {
-            free(mTexture->surface.image);
+            std::free(mTexture->surface.image);
             mTexture->surface.image = nullptr;
         }
-        ::free(mTexture);
+        std::free(mTexture);
         mTexture = nullptr;
     }
 }

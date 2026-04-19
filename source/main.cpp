@@ -4,21 +4,21 @@
 #include "utils/utils.h"
 #include "version.h"
 
-#define MODULE_VERSION      "v0.2"
+#define MODULE_VERSION      "v0.3"
 #define MODULE_VERSION_FULL MODULE_VERSION SPLASHSCREEN_MODULE_VERSION_EXTRA
 
-int32_t main(int32_t argc, char **argv) {
+int main(int argc, char **argv) {
     initLogging();
     DEBUG_FUNCTION_LINE_INFO("Running SplashScreen Module " MODULE_VERSION_FULL "");
 
-    std::filesystem::path basePath = "fs:/vol/external01/wiiu";
+    std::filesystem::path envDir;
     if (argc >= 1) {
-        basePath = argv[0];
+        envDir = argv[0];
     }
 
     GfxInit();
     {
-        SplashScreenDrawer splashScreenDrawer(basePath);
+        SplashScreenDrawer splashScreenDrawer(envDir);
         splashScreenDrawer.Draw();
     }
     GfxShutdown();
